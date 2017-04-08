@@ -130,7 +130,7 @@ namespace MapImageExporter
                 Log.info("\tweather - Render weather.");
                 Log.info("\tloc - Render things specific to a location.");
                 Log.info("\tall - Render all of the above.");
-                Log.info("\tThe default is 'tiles buildings furniture features'.");
+                Log.info("\tThe default is 'tiles loc'.");
             }
             else
             {
