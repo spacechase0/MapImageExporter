@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Buildings;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
@@ -18,15 +19,15 @@ namespace MapImageExporter
         {
             instance = this;
 
-            Helper.ConsoleCommands.Add("export", "export <all|list|map_name> - Export a map to a PNG", exportCommand);
+            Helper.ConsoleCommands.Add("export", "See 'export help'", exportCommand);
             GameEvents.UpdateTick += checkRenderQueue;
         }
 
         private void exportCommand( string str, string[] args )
         {
-            if ( args.Length != 1 )
+            if ( args.Length < 1 )
             {
-                Log.error("No map name given");
+                Log.error("No command/map_name given.");
                 return;
             }
 
@@ -54,6 +55,21 @@ namespace MapImageExporter
                 }
 
                 Log.info("Maps: " + maps);
+            }
+            else if (args[0] == "current")
+            {
+                renderQueue.Enqueue(Game1.currentLocation);
+            }
+            else if ( args[ 1 ] == "help" )
+            {
+                Log.info("Commands: ");
+                Log.info("\texport all [settings] - Export all locations.");
+                Log.info("\texport list - Get a list of available maps.");
+                Log.info("\texport current [settings] - Export your current location.");
+                Log.info("\texport <map_name> [settings] - Export map_name.");
+                Log.info("\texport help - Print this block of text.");
+                Log.info("Settings: ");
+                Log.info("\tTODO");
             }
             else
             {
@@ -94,7 +110,7 @@ namespace MapImageExporter
             try
             {
                 Log.info("Rendering " + loc.name + "...");
-                output = new RenderTarget2D(dev, loc.map.DisplayWidth, loc.map.DisplayHeight);
+                output = new RenderTarget2D(dev, loc.map.DisplayWidth / 4, loc.map.DisplayHeight / 4);
 
                 dev.SetRenderTarget(output);
                 dev.Clear(Color.Black);
@@ -132,9 +148,13 @@ namespace MapImageExporter
                 }
                 dev.SetRenderTarget(null);
 
+                string name = loc.name;
+                if ( loc.uniqueName != null )
+                    name = loc.uniqueName;
+
                 string dirPath = Helper.DirectoryPath + "/../../MapExport";
-                string imagePath = dirPath + "/" + loc.Name + ".png";
-                Log.info("Saving " + loc.name + " to " + imagePath + "...");
+                string imagePath = dirPath + "/" + name + ".png";
+                Log.info("Saving " + name + " to " + imagePath + "...");
 
                 if (!Directory.Exists(dirPath))
                     Directory.CreateDirectory(dirPath);
