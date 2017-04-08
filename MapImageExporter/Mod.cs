@@ -100,7 +100,7 @@ namespace MapImageExporter
                         {
                             if (building.indoors != null)
                             {
-                                maps += ", " + building.indoors.name;
+                                maps += ", " + building.indoors.uniqueName;
                             }
                         }
                     }
