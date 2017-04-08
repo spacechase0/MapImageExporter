@@ -67,6 +67,16 @@ namespace MapImageExporter
                 foreach ( GameLocation loc in Game1.locations )
                 {
                     renderQueue.Enqueue(new RenderQueueEntry(loc, flags));
+                    if ( loc is BuildableGameLocation )
+                    {
+                        foreach ( Building building in ( loc as BuildableGameLocation ).buildings )
+                        {
+                            if ( building.indoors != null )
+                            {
+                                renderQueue.Enqueue(new RenderQueueEntry(building.indoors, flags));
+                            }
+                        }
+                    }
                 }
             }
             else if (args[0] == "list")
@@ -83,6 +93,17 @@ namespace MapImageExporter
                     if (loc == Game1.locations[0])
                         continue;
                     maps += ", " + loc.name;
+
+                    if (loc is BuildableGameLocation)
+                    {
+                        foreach (Building building in (loc as BuildableGameLocation).buildings)
+                        {
+                            if (building.indoors != null)
+                            {
+                                maps += ", " + building.indoors.name;
+                            }
+                        }
+                    }
                 }
 
                 Log.info("Maps: " + maps);
