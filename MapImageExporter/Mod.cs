@@ -187,7 +187,7 @@ namespace MapImageExporter
         private void export(RenderQueueEntry render)
         {
             GameLocation loc = render.loc;
-
+            
             int oldZoom = Game1.pixelZoom;
             Game1.pixelZoom = 4;
             SpriteBatch b = Game1.spriteBatch;// new SpriteBatch(Game1.graphics.GraphicsDevice);
@@ -202,11 +202,13 @@ namespace MapImageExporter
             try
             {
                 Log.info("Rendering " + loc.name + "...");
-                output = new RenderTarget2D(dev, loc.map.DisplayWidth, loc.map.DisplayHeight);
+                output = new RenderTarget2D(dev, loc.map.DisplayWidth / 4, loc.map.DisplayHeight / 4);
                 RectangleX viewportX = new RectangleX(0, 0, output.Width, output.Height);
-                Rectangle viewport = new Rectangle(0, 0, output.Width, output.Height);
+                Rectangle viewport = new Rectangle(0, 0, output.Width * 4, output.Height * 4);
                 oldView = Game1.viewport;
                 Game1.viewport = viewport;
+
+                Matrix transform = Matrix.CreateScale(0.25f);
 
                 if (loc is DecoratableLocation)
                 {
@@ -222,7 +224,7 @@ namespace MapImageExporter
                     {
                         dev.SetRenderTarget(Game1.lightmap);
                         dev.Clear(Color.White * 0f);
-                        b.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointClamp, null, null);
+                        b.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointClamp, null, null, null, transform);
                         b.Draw(Game1.staminaRect, Game1.lightmap.Bounds, loc.name.Equals("UndergroundMine") ? Game1.mine.getLightingColor(null/*gameTime*/) : ((!Game1.ambientLight.Equals(Color.White) && (!Game1.isRaining || !loc.isOutdoors)) ? Game1.ambientLight : Game1.outdoorLight));
                         for (int i = 0; i < Game1.currentLightSources.Count; i++)
                         {
@@ -244,12 +246,13 @@ namespace MapImageExporter
                 {
                     loc.map.LoadTileSheets(display);
                     
-                    b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
+                    b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, transform);
                     begun = true;
                     if (render.Tiles)
                     {
                         display.BeginScene(b);
-                        loc.map.GetLayer("Back").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width, output.Height), xTile.Dimensions.Location.Origin, false, 4);
+                        loc.map.GetLayer("Back").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width*4, output.Height*4), xTile.Dimensions.Location.Origin, false, 4);
+                        loc.drawWater(b);
                     }
                     if ( render.Characters )
                     {
@@ -274,13 +277,13 @@ namespace MapImageExporter
                     }
                     if ( render.Tiles )
                     {
-                        loc.map.GetLayer("Buildings").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width, output.Height), xTile.Dimensions.Location.Origin, false, 4);
+                        loc.map.GetLayer("Buildings").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width*4, output.Height*4), xTile.Dimensions.Location.Origin, false, 4);
                         display.EndScene();
                     }
                     b.End();
                     begun = false;
 
-                    b.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
+                    b.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, transform);
                     begun = true;
                     if (render.Characters)
                     {
@@ -347,7 +350,7 @@ namespace MapImageExporter
                     if (render.Tiles)
                     {
                         display.BeginScene(b);
-                        loc.map.GetLayer("Front").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width, output.Height), xTile.Dimensions.Location.Origin, false, 4);
+                        loc.map.GetLayer("Front").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width*4, output.Height*4), xTile.Dimensions.Location.Origin, false, 4);
                         display.EndScene();
                     }
                     if ( render.Location )
@@ -357,7 +360,7 @@ namespace MapImageExporter
                     b.End();
                     begun = false;
 
-                    b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
+                    b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, transform);
                     begun = true;
                     if (render.Location)
                     {
@@ -393,7 +396,7 @@ namespace MapImageExporter
                         if (loc.map.GetLayer("AlwaysFront") != null)
                         {
                             display.BeginScene(b);
-                            loc.map.GetLayer("AlwaysFront").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width, output.Height), xTile.Dimensions.Location.Origin, false, 4);
+                            loc.map.GetLayer("AlwaysFront").Draw(Game1.mapDisplayDevice, new xTile.Dimensions.Rectangle(0, 0, output.Width*4, output.Height*4), xTile.Dimensions.Location.Origin, false, 4);
                             display.EndScene();
                         }
                     }
@@ -478,7 +481,7 @@ namespace MapImageExporter
 
                     if ( render.Event && Game1.currentLocation == loc)
                     {
-                        b.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
+                        b.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, transform);
                         begun = true;
                         if (Game1.eventUp && Game1.currentLocation.currentEvent != null)
                         {
@@ -508,7 +511,7 @@ namespace MapImageExporter
                     {
                         if (Game1.drawLighting)
                         {
-                            b.Begin(SpriteSortMode.Deferred, Helper.Reflection.GetPrivateField< BlendState >( Game1.game1, "lightingBlend" ).GetValue(), SamplerState.LinearClamp, null, null);
+                            b.Begin(SpriteSortMode.Deferred, Helper.Reflection.GetPrivateField< BlendState >( Game1.game1, "lightingBlend" ).GetValue(), SamplerState.LinearClamp, null, null, null, transform);
                             begun = true;
                             b.Draw(Game1.lightmap, Vector2.Zero, new Microsoft.Xna.Framework.Rectangle?(Game1.lightmap.Bounds), Color.White, 0f, Vector2.Zero, (float)(Game1.options.lightingQuality / 2), SpriteEffects.None, 1f);
                             if (Game1.isRaining && loc.isOutdoors && !(loc is Desert))
