@@ -12,8 +12,8 @@ namespace MapImageExporter
         Characters = 1 << 2,
         Player = 1 << 3,
         Event = 1 << 4,
-        Weather = 1 << 8,
-        Location = 1 << 9,
+        Weather = 1 << 5,
+        Location = 1 << 6,
     }
 
     class RenderQueueEntry

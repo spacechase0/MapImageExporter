@@ -15,6 +15,7 @@ using xTile.Dimensions;
 using RectangleX = Microsoft.Xna.Framework.Rectangle;
 using Rectangle = xTile.Dimensions.Rectangle;
 using StardewValley.Objects;
+using SFarmer = StardewValley.Farmer;
 
 namespace MapImageExporter
 {
@@ -146,7 +147,7 @@ namespace MapImageExporter
                 Log.info("Settings: ");
                 Log.info("\ttiles - Render the tilemap.");
                 Log.info("\tlight - Render lighting.");
-                Log.info("\tnpcs - Render NPCs.");
+                Log.info("\tnpcs - Render NPCs. (requires loc, apparently)");
                 Log.info("\tevent - Render the current event.");
                 Log.info("\tweather - Render weather.");
                 Log.info("\tloc - Render things specific to a location.");
@@ -345,7 +346,26 @@ namespace MapImageExporter
                             b.Draw(Game1.player.currentUpgrade.workerTexture, Game1.GlobalToLocal(viewport, Game1.player.currentUpgrade.positionOfCarpenter), new Microsoft.Xna.Framework.Rectangle?(Game1.player.currentUpgrade.getSourceRectangle()), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, (Game1.player.currentUpgrade.positionOfCarpenter.Y + (float)(Game1.tileSize * 3 / 4)) / 10000f);
                         }
 
-                        loc.draw(b);
+                        var chars = loc.characters;
+                        var farmers = loc.farmers;
+                        try
+                        {
+                            if ( !render.Player )
+                            {
+                                loc.farmers = new List<SFarmer>();
+                            }
+                            if ( !render.Characters )
+                            {
+                                loc.characters = new List<NPC>();
+                            }
+
+                            loc.draw(b);
+                        }
+                        finally
+                        {
+                            loc.farmers = farmers;
+                            loc.characters = chars;
+                        }
                     }
                     if ( render.Player && Game1.currentLocation == loc)
                     {
