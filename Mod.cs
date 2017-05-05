@@ -216,6 +216,8 @@ namespace MapImageExporter
             GraphicsDevice dev = Game1.graphics.GraphicsDevice;
             var display = Game1.mapDisplayDevice;
             RenderTarget2D output = null;
+            RenderTarget2D oldOutput = null;
+            RenderTarget2D myLighting = null;
             Stream stream = null;
             bool begun = false;
             Rectangle oldView = new Rectangle();
@@ -242,17 +244,27 @@ namespace MapImageExporter
 
                 if ( render.Lighting )
                 {
+                    int num1 = 32;
+                    float num2 = 1f;
+                    if (Game1.options != null)
+                    {
+                        num1 = Game1.options.lightingQuality;
+                        num2 = Game1.options.zoomLevel;
+                    }
+                    int width = (int)((double)output.Width * (1.0 / (double)num2) + (double)Game1.tileSize) / (num1 / 2);
+                    int height = (int)((double)output.Height * (1.0 / (double)num2) + (double)Game1.tileSize) / (num1 / 2);
+                    myLighting = new RenderTarget2D(dev, width, height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
                     if (Game1.drawLighting)
                     {
-                        dev.SetRenderTarget(Game1.lightmap);
+                        dev.SetRenderTarget(myLighting);
                         dev.Clear(Color.White * 0f);
                         b.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointClamp, null, null, null, transform);
-                        b.Draw(Game1.staminaRect, Game1.lightmap.Bounds, loc.name.Equals("UndergroundMine") ? Game1.mine.getLightingColor(null/*gameTime*/) : ((!Game1.ambientLight.Equals(Color.White) && (!Game1.isRaining || !loc.isOutdoors)) ? Game1.ambientLight : Game1.outdoorLight));
+                        b.Draw(Game1.staminaRect, myLighting.Bounds, loc.name.Equals("UndergroundMine") ? Game1.mine.getLightingColor(null/*gameTime*/) : ((!Game1.ambientLight.Equals(Color.White) && (!Game1.isRaining || !loc.isOutdoors)) ? Game1.ambientLight : Game1.outdoorLight));
                         for (int i = 0; i < Game1.currentLightSources.Count; i++)
                         {
-                            if (Utility.isOnScreen(Game1.currentLightSources.ElementAt(i).position, (int)(Game1.currentLightSources.ElementAt(i).radius * (float)Game1.tileSize * 4f)))
+                            //if (Utility.isOnScreen(Game1.currentLightSources.ElementAt(i).position, (int)(Game1.currentLightSources.ElementAt(i).radius * (float)Game1.tileSize * 4f)))
                             {
-                                b.Draw(Game1.currentLightSources.ElementAt(i).lightTexture, Game1.GlobalToLocal(viewport, Game1.currentLightSources.ElementAt(i).position) / (float)(Game1.options.lightingQuality / 2), new Microsoft.Xna.Framework.Rectangle?(Game1.currentLightSources.ElementAt(i).lightTexture.Bounds), Game1.currentLightSources.ElementAt(i).color, 0f, new Vector2((float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.X, (float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.Y), Game1.currentLightSources.ElementAt(i).radius / (float)(Game1.options.lightingQuality / 2), SpriteEffects.None, 0.9f);
+                                b.Draw(Game1.currentLightSources.ElementAt(i).lightTexture, Game1.currentLightSources.ElementAt(i).position / (float)(Game1.options.lightingQuality / 2), new Microsoft.Xna.Framework.Rectangle?(Game1.currentLightSources.ElementAt(i).lightTexture.Bounds), Game1.currentLightSources.ElementAt(i).color, 0f, new Vector2((float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.X, (float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.Y), Game1.currentLightSources.ElementAt(i).radius / (float)(Game1.options.lightingQuality / 2), SpriteEffects.None, 0.9f);
                             }
                         }
                         b.End();
@@ -554,16 +566,28 @@ namespace MapImageExporter
                         {
                             b.Begin(SpriteSortMode.Deferred, Helper.Reflection.GetPrivateField< BlendState >( Game1.game1, "lightingBlend" ).GetValue(), SamplerState.LinearClamp, null, null, null, transform);
                             begun = true;
-                            b.Draw(Game1.lightmap, Vector2.Zero, new Microsoft.Xna.Framework.Rectangle?(Game1.lightmap.Bounds), Color.White, 0f, Vector2.Zero, (float)(Game1.options.lightingQuality / 2), SpriteEffects.None, 1f);
-                            if (Game1.isRaining && loc.isOutdoors && !(loc is Desert))
+                            b.Draw(myLighting, Vector2.Zero, new Microsoft.Xna.Framework.Rectangle?(myLighting.Bounds), Color.White, 0f, Vector2.Zero, (float)(Game1.options.lightingQuality / 2) * 4, SpriteEffects.None, 1f);
+                            if (render.Weather && Game1.isRaining && loc.isOutdoors && !(loc is Desert))
                             {
-                                b.Draw(Game1.staminaRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.OrangeRed * 0.45f);
+                                b.Draw(Game1.staminaRect, output.Bounds, Color.OrangeRed * 0.45f);
                             }
                             b.End();
                             begun = false;
                         }
                     }
                 }
+
+                // This fixes the saved texture being transparent when there is lighting
+                // Not a very CLEAN fix... But it works
+                oldOutput = output;
+                output = new RenderTarget2D(dev, oldOutput.Width, oldOutput.Height);
+                dev.SetRenderTarget(output);
+                dev.Clear(Color.Black);
+                b.Begin();
+                begun = true;
+                b.Draw(oldOutput, new Vector2(0, 0), Color.White);
+                b.End();
+                begun = false;
                 dev.SetRenderTarget(null);
 
                 string name = loc.name;
@@ -579,6 +603,7 @@ namespace MapImageExporter
 
                 stream = File.Create(imagePath);
                 output.SaveAsPng(stream, output.Width, output.Height);
+                stream.Dispose();
             }
             catch (Exception e)
             {
@@ -592,8 +617,12 @@ namespace MapImageExporter
                 dev.SetRenderTarget(null);
                 if ( stream != null )
                     stream.Dispose();
-                if ( output != null )
+                if (oldOutput != null)
+                    oldOutput.Dispose();
+                if (output != null)
                     output.Dispose();
+                if (myLighting != null)
+                    myLighting.Dispose();
                 Game1.pixelZoom = oldZoom;
                 Game1.viewport = oldView;
                 Game1.options.zoomLevel = oldZoomL;
