@@ -501,11 +501,11 @@ namespace MapImageExporter
                     {
                         if (loc.LightLevel > 0f && Game1.timeOfDay < 2000)
                         {
-                            b.Draw(Game1.fadeToBlackRect, viewportX, Color.Black * loc.LightLevel);
+                            b.Draw(Game1.fadeToBlackRect, output.Bounds, Color.Black * loc.LightLevel);
                         }
                         if (Game1.screenGlow)
                         {
-                            b.Draw(Game1.fadeToBlackRect, viewportX, Game1.screenGlowColor * Game1.screenGlowAlpha);
+                            b.Draw(Game1.fadeToBlackRect, output.Bounds, Game1.screenGlowColor * Game1.screenGlowAlpha);
                         }
                     }
                     if ( render.Location )
@@ -523,9 +523,16 @@ namespace MapImageExporter
                     {
                         if (Game1.isRaining && loc.IsOutdoors && !loc.Name.Equals("Desert") && !(loc is Summit) && (!Game1.eventUp || loc.isTileOnMap(new Vector2((float)(viewport.X / Game1.tileSize), (float)(viewport.Y / Game1.tileSize)))))
                         {
-                            for (int j = 0; j < Game1.rainDrops.Length; j++)
+                            for (int ix = 0; ix < output.Bounds.Width / oldView.Width * 4; ++ix)
                             {
-                                b.Draw(Game1.rainTexture, Game1.rainDrops[j].position, new Microsoft.Xna.Framework.Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.rainTexture, Game1.rainDrops[j].frame, -1, -1)), Color.White);
+                                for (int iy = 0; iy < output.Bounds.Height / oldView.Height * 4; ++iy)
+                                {
+                                    var offset = new Vector2(ix * oldView.Width, iy * oldView.Height);
+                                    for (int j = 0; j < Game1.rainDrops.Length; j++)
+                                    {
+                                        b.Draw(Game1.rainTexture, offset + Game1.rainDrops[j].position, new Microsoft.Xna.Framework.Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.rainTexture, Game1.rainDrops[j].frame, -1, -1)), Color.White);
+                                    }
+                                }
                             }
                         }
                     }
