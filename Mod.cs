@@ -278,7 +278,8 @@ namespace MapImageExporter
                 dev.SetRenderTarget(output);
                 dev.Clear(Color.Black);
                 {
-                    loc.map.LoadTileSheets(display);
+                    if ( loc != Game1.currentLocation )
+                        loc.map.LoadTileSheets(display);
                     
                     b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, transform);
                     begun = true;
