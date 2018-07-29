@@ -10,5 +10,6 @@
   "Description": "Export a map to an image.",
   "UniqueID": "spacechase0.MapImageExporter",
   "PerSaveConfigs": false,
-  "EntryDll": "MapImageExporter.dll"
+  "EntryDll": "MapImageExporter.dll",
+  "UpdateKeys": [ "Nexus:1073" ]
 }
