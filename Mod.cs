@@ -16,6 +16,7 @@ using RectangleX = Microsoft.Xna.Framework.Rectangle;
 using Rectangle = xTile.Dimensions.Rectangle;
 using StardewValley.Objects;
 using SFarmer = StardewValley.Farmer;
+using Netcode;
 
 namespace MapImageExporter
 {
@@ -72,9 +73,9 @@ namespace MapImageExporter
                     {
                         foreach ( Building building in ( loc as BuildableGameLocation ).buildings )
                         {
-                            if ( building.indoors != null )
+                            if ( building.indoors.Value != null )
                             {
-                                renderQueue.Enqueue(new RenderQueueEntry(building.indoors, flags));
+                                renderQueue.Enqueue(new RenderQueueEntry(building.indoors.Value, flags));
                             }
                         }
                     }
@@ -88,20 +89,20 @@ namespace MapImageExporter
                     return;
                 }
 
-                string maps = Game1.locations[0].name;
+                string maps = Game1.locations[0].Name;
                 foreach (GameLocation loc in Game1.locations)
                 {
                     if (loc == Game1.locations[0])
                         continue;
-                    maps += ", " + loc.name;
+                    maps += ", " + loc.Name;
 
                     if (loc is BuildableGameLocation)
                     {
                         foreach (Building building in (loc as BuildableGameLocation).buildings)
                         {
-                            if (building.indoors != null)
+                            if (building.indoors.Value != null)
                             {
-                                maps += ", " + building.indoors.uniqueName;
+                                maps += ", " + building.indoors.Value.uniqueName.Value;
                             }
                         }
                     }
@@ -210,8 +211,8 @@ namespace MapImageExporter
         {
             GameLocation loc = render.loc;
             
-            int oldZoom = Game1.pixelZoom;
-            Game1.pixelZoom = 4;
+            //int oldZoom = Game1.pixelZoom;
+            //Game1.pixelZoom = 4;
             SpriteBatch b = Game1.spriteBatch;// new SpriteBatch(Game1.graphics.GraphicsDevice);
             GraphicsDevice dev = Game1.graphics.GraphicsDevice;
             var display = Game1.mapDisplayDevice;
@@ -225,7 +226,7 @@ namespace MapImageExporter
             Game1.options.zoomLevel = 0.25f;
             try
             {
-                Log.info("Rendering " + loc.name + "...");
+                Log.info("Rendering " + loc.Name + "...");
                 output = new RenderTarget2D(dev, loc.map.DisplayWidth / 4, loc.map.DisplayHeight / 4);
                 RectangleX viewportX = new RectangleX(0, 0, output.Width, output.Height);
                 Rectangle viewport = new Rectangle(0, 0, output.Width * 4, output.Height * 4);
@@ -259,12 +260,12 @@ namespace MapImageExporter
                         dev.SetRenderTarget(myLighting);
                         dev.Clear(Color.White * 0f);
                         b.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointClamp, null, null, null, transform);
-                        b.Draw(Game1.staminaRect, myLighting.Bounds, loc.name.Equals("UndergroundMine") ? Game1.mine.getLightingColor(null/*gameTime*/) : ((!Game1.ambientLight.Equals(Color.White) && (!Game1.isRaining || !loc.isOutdoors)) ? Game1.ambientLight : Game1.outdoorLight));
+                        b.Draw(Game1.staminaRect, myLighting.Bounds, loc.Name.Equals("UndergroundMine") ? Game1.mine.getLightingColor(null/*gameTime*/) : ((!Game1.ambientLight.Equals(Color.White) && (!Game1.isRaining || !loc.IsOutdoors)) ? Game1.ambientLight : Game1.outdoorLight));
                         for (int i = 0; i < Game1.currentLightSources.Count; i++)
                         {
                             //if (Utility.isOnScreen(Game1.currentLightSources.ElementAt(i).position, (int)(Game1.currentLightSources.ElementAt(i).radius * (float)Game1.tileSize * 4f)))
                             {
-                                b.Draw(Game1.currentLightSources.ElementAt(i).lightTexture, Game1.currentLightSources.ElementAt(i).position / (float)(Game1.options.lightingQuality / 2), new Microsoft.Xna.Framework.Rectangle?(Game1.currentLightSources.ElementAt(i).lightTexture.Bounds), Game1.currentLightSources.ElementAt(i).color, 0f, new Vector2((float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.X, (float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.Y), Game1.currentLightSources.ElementAt(i).radius / (float)(Game1.options.lightingQuality / 2), SpriteEffects.None, 0.9f);
+                                b.Draw(Game1.currentLightSources.ElementAt(i).lightTexture, Game1.currentLightSources.ElementAt(i).position.Value / (float)(Game1.options.lightingQuality / 2), new Microsoft.Xna.Framework.Rectangle?(Game1.currentLightSources.ElementAt(i).lightTexture.Bounds), Game1.currentLightSources.ElementAt(i).color.Value, 0f, new Vector2((float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.X, (float)Game1.currentLightSources.ElementAt(i).lightTexture.Bounds.Center.Y), Game1.currentLightSources.ElementAt(i).radius.Value / (float)(Game1.options.lightingQuality / 2), SpriteEffects.None, 0.9f);
                             }
                         }
                         b.End();
@@ -291,23 +292,23 @@ namespace MapImageExporter
                     }
                     if ( render.Characters )
                     {
-                        var chars = loc.characters;
+                        var chars = loc.characters.ToList();
                         if (render.Event && Game1.CurrentEvent != null && loc == Game1.currentLocation)
                             chars = Game1.CurrentEvent.actors;
 
                         foreach ( NPC npc in chars )
                         {
-                            if ( !npc.swimming && !npc.hideShadow && !npc.isInvisible && !loc.shouldShadowBeDrawnAboveBuildingsLayer( npc.getTileLocation() ) )
+                            if ( !npc.swimming.Value && !npc.HideShadow && !npc.IsInvisible && !loc.shouldShadowBeDrawnAboveBuildingsLayer( npc.getTileLocation() ) )
                             {
-                                b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(viewport, npc.position + new Vector2((float)(npc.sprite.spriteWidth * Game1.pixelZoom) / 2f, (float)(npc.GetBoundingBox().Height + (npc.IsMonster ? 0 : (Game1.pixelZoom * 3))))), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), ((float)Game1.pixelZoom + (float)npc.yJumpOffset / 40f) * npc.scale, SpriteEffects.None, Math.Max(0f, (float)npc.getStandingY() / 10000f) - 1E-06f);
+                                b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(viewport, npc.position + new Vector2((float)(npc.Sprite.SpriteWidth * Game1.pixelZoom) / 2f, (float)(npc.GetBoundingBox().Height + (npc.IsMonster ? 0 : (Game1.pixelZoom * 3))))), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), ((float)Game1.pixelZoom + (float)npc.yJumpOffset / 40f) * npc.Scale, SpriteEffects.None, Math.Max(0f, (float)npc.getStandingY() / 10000f) - 1E-06f);
                             }
                         }
                     }
                     if ( render.Player && Game1.currentLocation == loc )
                     {
-                        if (Game1.displayFarmer && !Game1.player.swimming && !Game1.player.isRidingHorse() && !Game1.currentLocation.shouldShadowBeDrawnAboveBuildingsLayer(Game1.player.getTileLocation()))
+                        if (Game1.displayFarmer && !Game1.player.swimming.Value && !Game1.player.isRidingHorse() && !Game1.currentLocation.shouldShadowBeDrawnAboveBuildingsLayer(Game1.player.getTileLocation()))
                         {
-                            b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(Game1.player.position + new Vector2(32f, 24f)), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), 4f - (((Game1.player.running || Game1.player.usingTool) && Game1.player.FarmerSprite.indexInCurrentAnimation > 1) ? ((float)Math.Abs(FarmerRenderer.featureYOffsetPerFrame[Game1.player.FarmerSprite.CurrentFrame]) * 0.5f) : 0f), SpriteEffects.None, 0f);
+                            b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(Game1.player.position + new Vector2(32f, 24f)), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), 4f - (((Game1.player.running || Game1.player.UsingTool) && Game1.player.FarmerSprite.currentAnimationIndex > 1) ? ((float)Math.Abs(FarmerRenderer.featureYOffsetPerFrame[Game1.player.FarmerSprite.CurrentFrame]) * 0.5f) : 0f), SpriteEffects.None, 0f);
                         }
                     }
                     if ( render.Tiles )
@@ -322,23 +323,23 @@ namespace MapImageExporter
                     begun = true;
                     if (render.Characters)
                     {
-                        var chars = loc.characters;
+                        var chars = loc.characters.ToList();
                         if (render.Event && Game1.CurrentEvent != null && loc == Game1.currentLocation)
                             chars = Game1.CurrentEvent.actors;
 
                         foreach (NPC npc in chars)
                         {
-                            if (!npc.swimming && !npc.hideShadow && !npc.isInvisible && !loc.shouldShadowBeDrawnAboveBuildingsLayer(npc.getTileLocation()))
+                            if (!npc.swimming.Value && !npc.HideShadow && !npc.IsInvisible && !loc.shouldShadowBeDrawnAboveBuildingsLayer(npc.getTileLocation()))
                             {
-                                b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(viewport, npc.position + new Vector2((float)(npc.sprite.spriteWidth * Game1.pixelZoom) / 2f, (float)(npc.GetBoundingBox().Height + (npc.IsMonster ? 0 : (Game1.pixelZoom * 3))))), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), ((float)Game1.pixelZoom + (float)npc.yJumpOffset / 40f) * npc.scale, SpriteEffects.None, Math.Max(0f, (float)npc.getStandingY() / 10000f) - 1E-06f);
+                                b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(viewport, npc.position + new Vector2((float)(npc.Sprite.SpriteWidth * Game1.pixelZoom) / 2f, (float)(npc.GetBoundingBox().Height + (npc.IsMonster ? 0 : (Game1.pixelZoom * 3))))), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), ((float)Game1.pixelZoom + (float)npc.yJumpOffset / 40f) * npc.Scale, SpriteEffects.None, Math.Max(0f, (float)npc.getStandingY() / 10000f) - 1E-06f);
                             }
                         }
                     }
                     if ( render.Player && Game1.currentLocation == loc)
                     {
-                        if (Game1.displayFarmer && !Game1.player.swimming && !Game1.player.isRidingHorse() && Game1.currentLocation.shouldShadowBeDrawnAboveBuildingsLayer(Game1.player.getTileLocation()))
+                        if (Game1.displayFarmer && !Game1.player.swimming.Value && !Game1.player.isRidingHorse() && Game1.currentLocation.shouldShadowBeDrawnAboveBuildingsLayer(Game1.player.getTileLocation()))
                         {
-                            b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(Game1.player.position + new Vector2(32f, 24f)), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), 4f - (((Game1.player.running || Game1.player.usingTool) && Game1.player.FarmerSprite.indexInCurrentAnimation > 1) ? ((float)Math.Abs(FarmerRenderer.featureYOffsetPerFrame[Game1.player.FarmerSprite.CurrentFrame]) * 0.5f) : 0f), SpriteEffects.None, Math.Max(0.0001f, (float)Game1.player.getStandingY() / 10000f + 0.00011f) - 0.0001f);
+                            b.Draw(Game1.shadowTexture, Game1.GlobalToLocal(Game1.player.position + new Vector2(32f, 24f)), new Microsoft.Xna.Framework.Rectangle?(Game1.shadowTexture.Bounds), Color.White, 0f, new Vector2((float)Game1.shadowTexture.Bounds.Center.X, (float)Game1.shadowTexture.Bounds.Center.Y), 4f - (((Game1.player.running || Game1.player.UsingTool) && Game1.player.FarmerSprite.currentAnimationIndex > 1) ? ((float)Math.Abs(FarmerRenderer.featureYOffsetPerFrame[Game1.player.FarmerSprite.CurrentFrame]) * 0.5f) : 0f), SpriteEffects.None, Math.Max(0.0001f, (float)Game1.player.getStandingY() / 10000f + 0.00011f) - 0.0001f);
                         }
                         if (Game1.displayFarmer)
                         {
@@ -359,25 +360,29 @@ namespace MapImageExporter
                             b.Draw(Game1.player.currentUpgrade.workerTexture, Game1.GlobalToLocal(viewport, Game1.player.currentUpgrade.positionOfCarpenter), new Microsoft.Xna.Framework.Rectangle?(Game1.player.currentUpgrade.getSourceRectangle()), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, (Game1.player.currentUpgrade.positionOfCarpenter.Y + (float)(Game1.tileSize * 3 / 4)) / 10000f);
                         }
 
+                        var charsField = Helper.Reflection.GetField<NetCollection<NPC>>(loc, "characters");
+                        var farmersField = Helper.Reflection.GetField<IEnumerable<Farmer>>(loc, "farmers");
                         var chars = loc.characters;
                         var farmers = loc.farmers;
                         try
                         {
                             if ( !render.Player )
                             {
-                                loc.farmers = new List<SFarmer>();
+                                var type = typeof(Game1).Assembly.GetType("StardewValley.Locations.LocationFarmers");
+                                var val = (IEnumerable<Farmer>)type.GetConstructor(new Type[] { typeof(GameLocation) }).Invoke(new object[] { loc });
+                                farmersField.SetValue(val);
                             }
                             if ( !render.Characters )
                             {
-                                loc.characters = new List<NPC>();
+                                charsField.SetValue(new NetCollection<NPC>());
                             }
 
                             loc.draw(b);
                         }
                         finally
                         {
-                            loc.farmers = farmers;
-                            loc.characters = chars;
+                            farmersField.SetValue(farmers);
+                            charsField.SetValue(chars);
                         }
                     }
                     if ( render.Player && Game1.currentLocation == loc)
@@ -391,7 +396,7 @@ namespace MapImageExporter
                     {
                         if (loc.Name.Equals("Farm"))
                         {
-                            Helper.Reflection.GetPrivateMethod(Game1.game1, "drawFarmBuildings").Invoke();
+                            Helper.Reflection.GetMethod(Game1.game1, "drawFarmBuildings").Invoke();
                         }
                     }
                     if (render.Location)
@@ -432,7 +437,7 @@ namespace MapImageExporter
                     if ( render.Player && Game1.currentLocation == loc)
                     {
                         var meth = typeof(Game1).GetMethod("checkBigCraftableBoundariesForFrontLayer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance );
-                        if (Game1.displayFarmer && Game1.player.ActiveObject != null && Game1.player.ActiveObject.bigCraftable && (bool) meth.Invoke( Game1.game1, new object[] { } ) && Game1.currentLocation.Map.GetLayer("Front").PickTile(new Location(Game1.player.getStandingX(), Game1.player.getStandingY()), viewport.Size) == null)
+                        if (Game1.displayFarmer && Game1.player.ActiveObject != null && Game1.player.ActiveObject.bigCraftable.Value && (bool) meth.Invoke( Game1.game1, new object[] { } ) && Game1.currentLocation.Map.GetLayer("Front").PickTile(new Location(Game1.player.getStandingX(), Game1.player.getStandingY()), viewport.Size) == null)
                         {
                             Game1.drawPlayerHeldObject(Game1.player);
                         }
@@ -480,7 +485,7 @@ namespace MapImageExporter
                     }
                     if ( render.Weather )
                     {
-                        if (Game1.isDebrisWeather && loc.IsOutdoors && !loc.ignoreDebrisWeather && !loc.Name.Equals("Desert") && viewport.X > -10)
+                        if (Game1.isDebrisWeather && loc.IsOutdoors && !loc.ignoreDebrisWeather.Value && !loc.Name.Equals("Desert") && viewport.X > -10)
                         {
                             using (List<WeatherDebris>.Enumerator enumerator4 = Game1.debrisWeather.GetEnumerator())
                             {
@@ -552,11 +557,11 @@ namespace MapImageExporter
                                 {
                                     Vector2 localPosition = current7.getLocalPosition(viewport);
                                     localPosition.Y -= (float)(Game1.tileSize * 2 + Game1.pixelZoom * 3);
-                                    if (current7.age == 2)
+                                    if (current7.Age == 2)
                                     {
                                         localPosition.Y += (float)(Game1.tileSize / 2);
                                     }
-                                    else if (current7.gender == 1)
+                                    else if (current7.Gender == 1)
                                     {
                                         localPosition.Y += (float)(Game1.tileSize / 6);
                                     }
@@ -572,10 +577,10 @@ namespace MapImageExporter
                     {
                         if (Game1.drawLighting)
                         {
-                            b.Begin(SpriteSortMode.Deferred, Helper.Reflection.GetPrivateField< BlendState >( Game1.game1, "lightingBlend" ).GetValue(), SamplerState.LinearClamp, null, null, null, transform);
+                            b.Begin(SpriteSortMode.Deferred, Helper.Reflection.GetField< BlendState >( Game1.game1, "lightingBlend" ).GetValue(), SamplerState.LinearClamp, null, null, null, transform);
                             begun = true;
                             b.Draw(myLighting, Vector2.Zero, new Microsoft.Xna.Framework.Rectangle?(myLighting.Bounds), Color.White, 0f, Vector2.Zero, (float)(Game1.options.lightingQuality / 2) * 4, SpriteEffects.None, 1f);
-                            if (render.Weather && Game1.isRaining && loc.isOutdoors && !(loc is Desert))
+                            if (render.Weather && Game1.isRaining && loc.IsOutdoors && !(loc is Desert))
                             {
                                 b.Draw(Game1.staminaRect, output.Bounds, Color.OrangeRed * 0.45f);
                             }
@@ -598,9 +603,9 @@ namespace MapImageExporter
                 begun = false;
                 dev.SetRenderTarget(null);
 
-                string name = loc.name;
-                if ( loc.uniqueName != null )
-                    name = loc.uniqueName;
+                string name = loc.Name;
+                if ( loc.uniqueName.Value != null )
+                    name = loc.uniqueName.Value;
 
                 string dirPath = Helper.DirectoryPath + "/../../MapExport";
                 string imagePath = dirPath + "/" + name + ".png";
@@ -631,7 +636,7 @@ namespace MapImageExporter
                     output.Dispose();
                 if (myLighting != null)
                     myLighting.Dispose();
-                Game1.pixelZoom = oldZoom;
+                //Game1.pixelZoom = oldZoom;
                 Game1.viewport = oldView;
                 Game1.options.zoomLevel = oldZoomL;
             }
