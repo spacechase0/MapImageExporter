@@ -199,11 +199,7 @@ namespace MapImageExporter
         /// <param name="e">The event arguments.</param>
         private void checkRenderQueue( object sender, UpdateTickedEventArgs e )
         {
-            // Simply doing the export when the command is called can cause issues (not
-            // actually rendering, making the game skip a frame, crashing, ...) since
-            // the console runs on another thread. Rendering might happen at the same 
-            // time as the main game. So instead we're going to render one per frame
-            // in the update stage, so things definitely don't interfere.
+            // render one location per frame to reduce performance impact.
             if (renderQueue.TryDequeue(out RenderQueueEntry toRender))
                 export(toRender);
         }
