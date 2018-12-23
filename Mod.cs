@@ -604,9 +604,9 @@ namespace MapImageExporter
                 if ( loc.uniqueName.Value != null )
                     name = loc.uniqueName.Value;
 
-                string dirPath = Helper.DirectoryPath + "/../../MapExport";
-                string imagePath = dirPath + "/" + name + ".png";
-                Log.info("Saving " + name + " to " + Path.GetFullPath(imagePath) + "...");
+                string dirPath = Path.Combine(Constants.ExecutionPath, "MapExport");
+                string imagePath = Path.Combine(dirPath, $"{name}.png");
+                Log.info($"Saving {name} to {Path.GetFullPath(imagePath)}...");
 
                 if (!Directory.Exists(dirPath))
                     Directory.CreateDirectory(dirPath);
