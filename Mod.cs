@@ -222,7 +222,7 @@ namespace MapImageExporter
             bool begun = false;
             Rectangle oldView = new Rectangle();
             float oldZoomL = Game1.options.zoomLevel;
-            Game1.options.zoomLevel = 0.25f;
+            Game1.options.desiredBaseZoomLevel = 0.25f;
             try
             {
                 Log.info("Rendering " + loc.Name + "...");
@@ -633,7 +633,7 @@ namespace MapImageExporter
                 myLighting?.Dispose();
                 //Game1.pixelZoom = oldZoom;
                 Game1.viewport = oldView;
-                Game1.options.zoomLevel = oldZoomL;
+                Game1.options.desiredBaseZoomLevel = oldZoomL;
             }
 
             if (loc is DecoratableLocation location)
